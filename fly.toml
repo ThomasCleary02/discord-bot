@@ -1,0 +1,13 @@
+app = "discord-bot"  # Replace with your preferred app name
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+
+[processes]
+  app = "python main.py"
+
+[experimental]
+  auto_rollback = true
