@@ -119,35 +119,41 @@ async def handle_mention(message: discord.Message):
     guild=guild_obj  # None for global, guild_obj for development
 )
 @app_commands.describe(
-    target="What or who should I roast?",
-    user="Tag someone specific to roast (optional)"
+    topic="What should I roast? (e.g., 'pineapple pizza', 'my coding skills', etc.)",
+    user="Tag someone to roast them directly (optional)"
 )
-async def roast_command(interaction: discord.Interaction, target: str, user: discord.User = None):
+async def roast_command(interaction: discord.Interaction, topic: str = None, user: discord.User = None):
     """Roast command handler"""
     await interaction.response.defer()
     
-    # Determine the target
-    if user:
+    # Determine what we're roasting
+    if user and topic:
+        # Roast a specific user about a specific topic
         roast_target = f"<@{user.id}>"
-        context = f"Roast this person: {user.display_name}. "
+        full_message = f"Give me a clever, light-hearted roast about {user.display_name}'s {topic}"
+        context = f"Roast {user.display_name} about their {topic}"
+    elif user:
+        # Just roast the user in general
+        roast_target = f"<@{user.id}>"
+        full_message = f"Give me a clever, light-hearted roast about {user.display_name}"
+        context = f"Roast {user.display_name} in general"
+    elif topic:
+        # Roast a topic, directed at the command user
+        roast_target = f"<@{interaction.user.id}>"
+        full_message = f"Give me a clever, light-hearted roast about {topic}"
+        context = f"Roast the person about {topic}"
     else:
-        roast_target = "you"
-        context = ""
-    
-    context += f"The roast request is about: {target}"
-    full_message = f"Give me a clever, light-hearted roast about: {target}"
+        # No parameters - roast the command user in general
+        roast_target = f"<@{interaction.user.id}>"
+        full_message = "Give me a clever, light-hearted roast"
+        context = "Give a general roast to the person who asked"
     
     try:
         roast_response = await get_ai_response(full_message, context, CLAUDE_TOKEN)
-        
-        # Format the response
-        if user:
-            response = f"{roast_target} {roast_response}"
-        else:
-            response = roast_response
+        response = f"{roast_target} {roast_response}"
             
         await interaction.followup.send(response)
-        logger.info(f"Roast delivered by {interaction.user.display_name}: {target}")
+        logger.info(f"Roast delivered by {interaction.user.display_name} - Topic: {topic}, User: {user}")
         
     except Exception as e:
         logger.error(f"Roast command failed: {e}")
@@ -166,7 +172,50 @@ async def ping_command(interaction: discord.Interaction):
     latency = round(bot.latency * 1000)
     await interaction.response.send_message(f"Pong! 🏓 Latency: {latency}ms")
 
-# --- Error handlers ---
+# --- Add a manual sync command for debugging ---
+@bot.command(name="sync")
+async def sync_commands(ctx):
+    """Manual command to sync slash commands (for debugging)"""
+    if ctx.author.id != 123456789:  # Replace with your Discord user ID
+        await ctx.send("Only the bot owner can use this command.")
+        return
+    
+    try:
+        if guild_obj:
+            synced = await bot.tree.sync(guild=guild_obj)
+            await ctx.send(f"Synced {len(synced)} commands to this guild.")
+        else:
+            synced = await bot.tree.sync()
+            await ctx.send(f"Synced {len(synced)} commands globally.")
+        
+        for cmd in synced:
+            logger.info(f"Synced: /{cmd.name}")
+            
+    except Exception as e:
+        await ctx.send(f"Failed to sync: {e}")
+        logger.error(f"Manual sync failed: {e}")
+
+# --- Add clear commands for debugging ---
+@bot.command(name="clear")
+async def clear_commands(ctx):
+    """Clear all slash commands (for debugging)"""
+    if ctx.author.id != 123456789:  # Replace with your Discord user ID
+        await ctx.send("Only the bot owner can use this command.")
+        return
+    
+    try:
+        if guild_obj:
+            bot.tree.clear_commands(guild=guild_obj)
+            await bot.tree.sync(guild=guild_obj)
+            await ctx.send("Cleared guild commands.")
+        else:
+            bot.tree.clear_commands()
+            await bot.tree.sync()
+            await ctx.send("Cleared global commands.")
+            
+    except Exception as e:
+        await ctx.send(f"Failed to clear: {e}")
+        logger.error(f"Clear failed: {e}")
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     """Handle slash command errors"""
@@ -193,7 +242,29 @@ async def on_command_error(ctx, error):
     logger.error(f"Command error: {error}")
     await ctx.send("Something went wrong. Maybe try a slash command instead?")
 
-# --- Start the Bot ---
+# --- Alternative roast command registration ---
+async def setup_commands():
+    """Setup slash commands after bot is ready"""
+    
+    @bot.tree.command(
+        name="roast",
+        description="Get a light-hearted roast from ChillBot",
+        guild=guild_obj
+    )
+    @app_commands.describe(
+        target="What or who should I roast?",
+        user="Tag someone specific to roast (optional)"
+    )
+    async def roast_alt(interaction: discord.Interaction, topic: str = None, user: discord.User = None):
+        await roast_command(interaction, topic, user)
+    
+    @bot.tree.command(
+        name="ping", 
+        description="Check if ChillBot is responsive",
+        guild=guild_obj
+    )
+    async def ping_alt(interaction: discord.Interaction):
+        await ping_command(interaction)
 if __name__ == "__main__":
     logger.info("Starting ChillBot...")
     bot.run(TOKEN)
