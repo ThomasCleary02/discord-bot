@@ -13,6 +13,38 @@ async def get_ai_response(message: str, context: str, api_key: str=None):
         max_retries=2
     )
 
+    # Check if this is a roast request
+    is_roast = "roast" in message.lower() or (context and "roast" in context.lower())
+
+    if is_roast:
+        prompt = ChatPromptTemplate.from_template(
+            """
+            You are ChillBot, a bot that delivers light-hearted, funny roasts. Your roasts should be:
+            1. Playful and humorous, not mean-spirited
+            2. Creative and unexpected
+            3. Up to 40 words max
+            4. Focused on the target/topic mentioned
+            5. Safe for work and not offensive
+            6. Using clever wordplay or funny observations
+            7. Never actually hurtful or cruel
+
+            Examples of GOOD roasts:
+            "Your coding skills are like a GPS - always taking the longest route to the solution."
+            "Your taste in music is like a broken clock - right twice a day, but mostly just making noise."
+            "Your cooking is like a magic show - full of smoke and mystery, but the end result is always a surprise."
+
+            This is the roast request:
+            {message}
+
+            The context of the roast:
+            {context}
+            """
+        )
+        chain = prompt | llm
+        result = await chain.ainvoke({"message": message, "context": context})
+        return result.content
+
+    # Regular chat prompt for non-roast interactions
     if context:
         prompt = ChatPromptTemplate.from_template(
             """
