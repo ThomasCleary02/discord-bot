@@ -115,41 +115,38 @@ async def handle_mention(message: discord.Message):
 # --- Slash Command: /roast ---
 @bot.tree.command(
     name="roast",
-    description="Get a light-hearted roast from ChillBot",
-    guild=guild_obj  # None for global, guild_obj for development
+    description="Get absolutely roasted by ChillBot (no mercy)",
+    guild=guild_obj
 )
 @app_commands.describe(
-    topic="What should I roast? (e.g., 'pineapple pizza', 'my coding skills', etc.)",
-    user="Tag someone to roast them directly (optional)"
+    topic="What should I roast? (e.g., 'gaming skills', 'dating life', 'fashion sense', 'workout routine')",
+    user="Tag someone to get absolutely destroyed (optional)"
 )
 async def roast_command(interaction: discord.Interaction, topic: str = None, user: discord.User = None):
     """Roast command handler"""
     await interaction.response.defer()
     
-    # Determine what we're roasting
+    # Build clear instructions for the AI
     if user and topic:
         # Roast a specific user about a specific topic
         roast_target = f"<@{user.id}>"
-        full_message = f"Give me a clever, light-hearted roast about {user.display_name}'s {topic}"
-        context = f"Roast {user.display_name} about their {topic}"
+        instructions = f"Roast {user.display_name} about their {topic}. Make it specific to {topic} and personal to them."
     elif user:
         # Just roast the user in general
         roast_target = f"<@{user.id}>"
-        full_message = f"Give me a clever, light-hearted roast about {user.display_name}"
-        context = f"Roast {user.display_name} in general"
+        instructions = f"Give {user.display_name} a general roast. Make it about them personally but keep it playful."
     elif topic:
         # Roast a topic, directed at the command user
         roast_target = f"<@{interaction.user.id}>"
-        full_message = f"Give me a clever, light-hearted roast about {topic}"
-        context = f"Roast the person about {topic}"
+        instructions = f"Roast {interaction.user.display_name} about their {topic}. Focus on the {topic} specifically."
     else:
         # No parameters - roast the command user in general
         roast_target = f"<@{interaction.user.id}>"
-        full_message = "Give me a clever, light-hearted roast"
-        context = "Give a general roast to the person who asked"
+        instructions = f"Give {interaction.user.display_name} a general roast. Be creative and snarky."
     
     try:
-        roast_response = await get_ai_response(full_message, context, CLAUDE_TOKEN)
+        # Pass clear instructions instead of mixed message/context
+        roast_response = await get_ai_response(instructions, None, CLAUDE_TOKEN)
         response = f"{roast_target} {roast_response}"
             
         await interaction.followup.send(response)
