@@ -115,12 +115,12 @@ async def handle_mention(message: discord.Message):
 # --- Slash Command: /roast ---
 @bot.tree.command(
     name="roast",
-    description="Get absolutely roasted by ChillBot (no mercy)",
+    description="Get a witty comeback from ChillBot's sarcastic side",
     guild=guild_obj
 )
 @app_commands.describe(
-    topic="What should I roast? (e.g., 'gaming skills', 'dating life', 'fashion sense', 'workout routine')",
-    user="Tag someone to get absolutely destroyed (optional)"
+    topic="What should I give you a reality check about? (e.g., 'gaming skills', 'dating life', 'fashion sense')",
+    user="Tag someone who needs humbled (optional)"
 )
 async def roast_command(interaction: discord.Interaction, topic: str = None, user: discord.User = None):
     """Roast command handler"""

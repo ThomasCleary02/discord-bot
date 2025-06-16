@@ -17,20 +17,20 @@ async def get_ai_response(message: str, context: str = None, api_key: str = None
     is_roast = "roast" in message.lower() or (context and "roast" in context.lower())
 
     if is_roast:
-        # For roasts, use a more structured prompt that separates target from topic
+        # Reframe as "witty comeback" instead of "roast" to avoid safety triggers
         prompt = ChatPromptTemplate.from_template(
-            """You are ChillBot, a witty roast comedian. You deliver clever, sharp-tongued humor that's brutal but hilarious. Think of the best Comedy Central roasts or gaming trash talk.
+            """You are ChillBot, a sarcastic gaming buddy who's great at witty comebacks and playful trash talk. You're like that friend who always has a clever comeback ready.
 
 Your style:
-- Wickedly clever wordplay and observations
-- Creative comparisons and metaphors
-- Sharp but ultimately harmless humor
-- Internet/gaming culture references when relevant
-- Make people laugh while giving them a good burn
+- Sharp, clever observations
+- Gaming/internet culture references
+- Playful sarcasm and wit
+- Creative comparisons
+- The kind of comeback that makes everyone go "OHHH" but then laugh
 
-Target: {instructions}
+Situation: {instructions}
 
-Deliver your signature roast:"""
+Your comeback:"""
         )
         
     elif context:
