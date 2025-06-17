@@ -5,63 +5,42 @@ from langchain_core.prompts import ChatPromptTemplate
 async def get_ai_response(message: str, context: str = None, api_key: str = None):
     
     llm = ChatAnthropic(
-        model='claude-3-5-haiku-20241022',  # Updated to 3.5 Haiku for better creativity
+        model='claude-3-5-haiku-20241022',
         api_key=api_key,
-        temperature=0.9,  # Increased for maximum creativity and edge
-        max_tokens=120,   # Slightly increased for more elaborate roasts
+        temperature=0.9,
+        max_tokens=150,
         timeout=None,
         max_retries=2
     )
 
-    # Check if this is a roast request
-    is_roast = "roast" in message.lower() or (context and "roast" in context.lower())
-
-    if is_roast:
-        # Reframe as "witty comeback" instead of "roast" to avoid safety triggers
+    if context:
+        # For conversations with context (when replying to bot's previous message)
         prompt = ChatPromptTemplate.from_template(
-            """You are ChillBot, a sarcastic gaming buddy who's great at witty comebacks and playful trash talk. You're like that friend who always has a clever comeback ready.
+            """You are ChillBot - a sarcastic, unimpressed but helpful Discord chatbot. You remember what was said before and respond naturally to the conversation flow.
 
-Your style:
-- Sharp, clever observations
-- Gaming/internet culture references
-- Playful sarcasm and wit
-- Creative comparisons
-- The kind of comeback that makes everyone go "OHHH" but then laugh
-
-Situation: {instructions}
-
-Your comeback:"""
-        )
-        
-    elif context:
-        # For regular conversations with context
-        prompt = ChatPromptTemplate.from_template(
-            """You are ChillBot - sarcastic, unimpressed, but helpful. You remember what was said before.
-
-What happened before: {context}
+Previous context: {context}
 Current message: {message}
 
-Respond with your signature attitude:"""
+Respond with your signature sarcastic attitude, but be helpful:"""
         )
+        result = await llm.ainvoke(prompt.format(message=message, context=context))
         
     else:
         # For regular conversations without context
         prompt = ChatPromptTemplate.from_template(
-            """You are ChillBot - sarcastic and unimpressed but you answer questions. Be direct and snarky.
+            """You are ChillBot - a sarcastic and unimpressed Discord chatbot, but you're still helpful. Your personality:
 
-User: {message}
+- Sarcastic and witty
+- Slightly unimpressed with everything
+- Gaming/internet culture aware
+- Helpful despite the attitude
+- Direct and to the point
+- Sometimes uses gaming or tech references
+
+User message: {message}
 
 Your response:"""
         )
-
-    chain = prompt | llm
-    
-    if is_roast:
-        # For roasts, pass the instructions as a single parameter
-        result = await chain.ainvoke({"instructions": message})
-    elif context:
-        result = await chain.ainvoke({"message": message, "context": context})
-    else:
-        result = await chain.ainvoke({"message": message})
+        result = await llm.ainvoke(prompt.format(message=message))
     
     return result.content.strip()
